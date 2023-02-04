@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 
 	"github.com/carloscontrerasruiz/gogrpc/models"
 	"github.com/carloscontrerasruiz/gogrpc/repository"
@@ -43,4 +44,32 @@ func (s *TestServer) SetTest(ctx context.Context, req *testspb.Test) (*testspb.S
 	return &testspb.SetTestResponse{
 		Id: test.Id,
 	}, nil
+}
+
+func (s *TestServer) SetQuestions(stream testspb.TestService_SetQuestionsServer) error {
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&testspb.SetQuestionResponse{
+				Ok: true,
+			})
+		}
+		if err != nil {
+			return err
+		}
+
+		question := &models.Question{
+			Id:       msg.GetId(),
+			Answer:   msg.Answer,
+			Question: msg.Question,
+			TestId:   msg.GetTestId(),
+		}
+
+		err = s.repo.SetQuestion(context.Background(), question)
+		if err != nil {
+			return stream.SendAndClose(&testspb.SetQuestionResponse{
+				Ok: false,
+			})
+		}
+	}
 }
