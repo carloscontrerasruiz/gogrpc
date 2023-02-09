@@ -14,3 +14,6 @@ Comandos para las instalaciones de proto gen
 - go get google.golang.org/grpc
 - docker run -d -p 5432:5432 gogrpc
 - docker build . -t gogrpc
+
+- go build -o server-student.exe
+- go build -o server-student.exe server-student/main.go

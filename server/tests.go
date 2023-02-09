@@ -3,9 +3,11 @@ package server
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/carloscontrerasruiz/gogrpc/models"
 	"github.com/carloscontrerasruiz/gogrpc/repository"
+	"github.com/carloscontrerasruiz/gogrpc/studentpb"
 	"github.com/carloscontrerasruiz/gogrpc/testspb"
 )
 
@@ -72,4 +74,54 @@ func (s *TestServer) SetQuestions(stream testspb.TestService_SetQuestionsServer)
 			})
 		}
 	}
+}
+
+func (s *TestServer) EnrollStudents(stream testspb.TestService_EnrollStudentsServer) error {
+	for {
+		msg, err := stream.Recv()
+
+		if err == io.EOF {
+			return stream.SendAndClose(&testspb.SetQuestionResponse{
+				Ok: true,
+			})
+		}
+		if err != nil {
+			return err
+		}
+
+		enrollment := &models.Enrollment{
+			StudentId: msg.StudentId,
+			TestId:    msg.TestId,
+		}
+
+		err = s.repo.SetEnrollment(context.Background(), enrollment)
+		if err != nil {
+			return stream.SendAndClose(&testspb.SetQuestionResponse{
+				Ok: false,
+			})
+		}
+	}
+}
+
+func (s *TestServer) GetStudentsPerTest(req *testspb.GetStudentsPerTestRequest, stream testspb.TestService_GetStudentsPerTestServer) error {
+	students, err := s.repo.GetStudentsPerTest(context.Background(), req.GetTestId())
+	if err != nil {
+		return err
+	}
+
+	for _, student := range students {
+		studentProto := &studentpb.Student{
+			Id:   student.Id,
+			Name: student.Name,
+			Age:  student.Age,
+		}
+
+		err := stream.Send(studentProto)
+		time.Sleep(2 * time.Second)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
