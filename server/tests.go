@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"io"
+	"log"
 	"time"
 
 	"github.com/carloscontrerasruiz/gogrpc/models"
@@ -124,4 +125,42 @@ func (s *TestServer) GetStudentsPerTest(req *testspb.GetStudentsPerTestRequest, 
 	}
 
 	return nil
+}
+
+func (s *TestServer) TakeTest(stream testspb.TestService_TakeTestServer) error {
+	questions, err := s.repo.GetQuestionPerTest(context.Background(), "t1")
+	if err != nil {
+		return err
+	}
+
+	i := 0
+	var currentQuestion = &models.Question{}
+
+	for {
+		if i < len(questions) {
+			currentQuestion = questions[i]
+		}
+
+		if i <= len(questions) {
+			questionToSend := &testspb.Question{
+				Id:       currentQuestion.Id,
+				Question: currentQuestion.Question,
+			}
+			err := stream.Send(questionToSend)
+			if err != nil {
+				return err
+			}
+			i++
+		}
+
+		answer, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+
+		log.Println(answer)
+	}
 }

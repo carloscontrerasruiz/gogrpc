@@ -123,3 +123,34 @@ func (repo *PostgresRepository) SetEnrollment(ctx context.Context, enrollment *m
 	_, err := repo.db.ExecContext(ctx, "INSERT INTO enrollments (test_id, student_id) VALUES ($1, $2)", enrollment.TestId, enrollment.StudentId)
 	return err
 }
+
+func (repo *PostgresRepository) GetQuestionPerTest(ctx context.Context, testId string) ([]*models.Question, error) {
+	rows, err := repo.db.QueryContext(ctx, "SELECT id, question FROM questions WHERE test_id  = $1",
+		testId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	var questions []*models.Question
+	for rows.Next() {
+		var question = models.Question{}
+		err := rows.Scan(&question.Id, &question.Question)
+		if err == nil {
+			questions = append(questions, &question)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return questions, nil
+}
