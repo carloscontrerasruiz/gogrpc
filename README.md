@@ -17,3 +17,15 @@ Comandos para las instalaciones de proto gen
 
 - go build -o server-student.exe
 - go build -o server-student.exe server-student/main.go
+
+## PROXY
+
+- https://github.com/grpc/grpc-web
+- https://www.envoyproxy.io/
+
+## MAKEFILE
+
+- Windows installatio of mingw
+- https://sourceforge.net/projects/mingw/
+- mingw-get install mingw32-make
+- make clean generate
